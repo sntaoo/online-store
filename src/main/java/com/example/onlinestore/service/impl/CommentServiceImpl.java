@@ -318,6 +318,11 @@ public class CommentServiceImpl implements CommentService {
             return;
         }
         long randomLong = makeRandomLong(System.currentTimeMillis());
+        long generateMyComplexHashCode = generateMyComplexHashCode(entity);
+        if (randomLong < generateMyComplexHashCode &&
+                generateMyComplexHashCode % randomLong == 0) {
+            throw new WrongEntityZoneException("Wrong entity zone");
+        }
         if (even(randomLong)) {
             entity.setCommentZone(CommentZoneEnum.RANDOM_INCREASE.getValue());
         } else {
