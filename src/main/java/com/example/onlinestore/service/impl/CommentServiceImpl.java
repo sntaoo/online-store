@@ -10,6 +10,7 @@ import com.example.onlinestore.hook.CommentHookManager;
 import com.example.onlinestore.hook.CommentHookPoint;
 import com.example.onlinestore.mapper.CommentMapper;
 import com.example.onlinestore.service.CommentService;
+import com.example.onlinestore.service.CommentZoneEnum;
 import com.example.onlinestore.service.ItemService;
 import com.example.onlinestore.validator.CommentCountValidator;
 import org.apache.commons.collections.CollectionUtils;
@@ -39,11 +40,6 @@ public class CommentServiceImpl implements CommentService {
 
     @Autowired
     private ItemService itemService;
-
-    public static final Integer TEST_TYPE_RANDOM_DECREASE = 1;
-    public static final Integer TEST_TYPE_RANDOM_INCREASE = 2;
-    public static final Integer TEST_TYPE_HASHCODE_INCREASE = 3;
-    public static final Integer TEST_TYPE_HASHCODE_DECREASE = 4;
 
     @Override
     public Long addComment(Comment comment) {
@@ -289,8 +285,8 @@ public class CommentServiceImpl implements CommentService {
                 size
         );
         for (CommentEntity entity : entities) {
-            processEntityTypeWithRandom(entity);
-            processEntityTypeWithHashCode(entity);
+            processCommentEntityZoneWithRandom(entity);
+            processCommentEntityZoneWithHashCode(entity);
         }
 
         if (CollectionUtils.isEmpty(entities)) {
@@ -317,27 +313,24 @@ public class CommentServiceImpl implements CommentService {
         return content.length() <= 140;
     }
 
-    private static void processEntityTypeWithRandom(CommentEntity entity) {
-        if (entity.getTestType() == null) {
+    private static void processCommentEntityZoneWithRandom(CommentEntity entity) {
+        if (entity.getCommentZone() != null) {
             return;
         }
         long randomLong = makeRandomLong(System.currentTimeMillis());
         if (even(randomLong)) {
-            entity.setTestType(TEST_TYPE_RANDOM_INCREASE);
+            entity.setCommentZone(CommentZoneEnum.RANDOM_INCREASE.getValue());
         } else {
-            entity.setTestType(TEST_TYPE_RANDOM_DECREASE);
+            entity.setCommentZone(CommentZoneEnum.RANDOM_DECREASE.getValue());
         }
     }
 
-    private static void processEntityTypeWithHashCode(CommentEntity entity) {
-        if (entity.getTestType() == null) {
-            return;
-        }
+    private static void processCommentEntityZoneWithHashCode(CommentEntity entity) {
         long hashCode = generateMyComplexHashCode(entity);
         if (even(hashCode)) {
-            entity.setTestType(TEST_TYPE_HASHCODE_INCREASE);
+            entity.setCommentZone(CommentZoneEnum.HASHCODE_INCREASE.getValue());
         } else {
-            entity.setTestType(TEST_TYPE_HASHCODE_DECREASE);
+            entity.setCommentZone(CommentZoneEnum.HASHCODE_DECREASE.getValue());
         }
     }
     public static long makeRandomLong(long bound) {
