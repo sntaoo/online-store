@@ -6,10 +6,11 @@ import com.example.onlinestore.dto.CommentStatistics;
 import com.example.onlinestore.entity.CommentEntity;
 import com.example.onlinestore.enums.CommentStatus;
 import com.example.onlinestore.enums.CommentType;
-import com.example.onlinestore.hook.CommentHookPoint;
 import com.example.onlinestore.hook.CommentHookManager;
+import com.example.onlinestore.hook.CommentHookPoint;
 import com.example.onlinestore.mapper.CommentMapper;
 import com.example.onlinestore.service.CommentService;
+import com.example.onlinestore.service.CommentZoneEnum;
 import com.example.onlinestore.service.ItemService;
 import com.example.onlinestore.validator.CommentCountValidator;
 import org.apache.commons.collections.CollectionUtils;
@@ -25,15 +26,15 @@ import java.util.stream.Collectors;
 
 @Service
 public class CommentServiceImpl implements CommentService {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(CommentServiceImpl.class);
-    
+
     @Autowired
     private CommentMapper commentMapper;
-    
+
     @Autowired
     private CommentHookManager hookManager;
-    
+
     @Autowired
     private CommentCountValidator commentCountValidator;
 
@@ -63,9 +64,9 @@ public class CommentServiceImpl implements CommentService {
             // 检查用户在该商品下的评论数量
             int currentCommentCount = commentMapper.countUserItemComments(
                     comment.getUserId(), comment.getItemId());
-            
+
             if (!commentCountValidator.validateCommentCount(currentCommentCount)) {
-                logger.warn("User {} has reached maximum comment limit for item {}", 
+                logger.warn("User {} has reached maximum comment limit for item {}",
                         comment.getUserId(), comment.getItemId());
                 throw new IllegalStateException(
                         "You have reached the maximum number of comments allowed for this item");
@@ -89,28 +90,28 @@ public class CommentServiceImpl implements CommentService {
 
             // 设置创建时间
             entity.setCreateTime(new Date());
-            
+
             entity.setStatus(CommentStatus.PENDING);
             entity.setType(CommentType.REGULAR_REVIEW);
             entity.setEmotionalScore(0);
             entity.setIsVerifiedPurchase(false);
             entity.setLanguageCode("en");
-            
+
             // 保存评论
-            logger.debug("Adding new comment for item: {}, user: {}", 
+            logger.debug("Adding new comment for item: {}, user: {}",
                     comment.getItemId(), comment.getUserId());
             commentMapper.insertComment(entity);
             logger.info("Successfully added comment: {}", entity.getId());
-            
+
             // 设置ID
             comment.setId(entity.getId());
-            
+
             // 执行插入后Hook
             hookManager.executeHooks(CommentHookPoint.AFTER_INSERT, comment);
-            
+
             return entity.getId();
         } catch (Exception e) {
-            logger.error("Failed to add comment for item: {}, user: {}", 
+            logger.error("Failed to add comment for item: {}, user: {}",
                     comment.getItemId(), comment.getUserId(), e);
             throw new RuntimeException("Failed to add comment", e);
         }
@@ -121,7 +122,7 @@ public class CommentServiceImpl implements CommentService {
         if (commentId == null) {
             throw new IllegalArgumentException("Comment ID cannot be null");
         }
-        
+
         logger.debug("Retrieving comment: {}", commentId);
         CommentEntity comment = commentMapper.findById(commentId);
         logger.debug("Retrieved comment: {}", comment != null ? comment.getId() : "not found");
@@ -133,7 +134,7 @@ public class CommentServiceImpl implements CommentService {
         if (commentId == null) {
             throw new IllegalArgumentException("Comment ID cannot be null");
         }
-        
+
         try {
             // 获取评论
             Comment comment = getComment(commentId);
@@ -150,10 +151,10 @@ public class CommentServiceImpl implements CommentService {
             logger.debug("Deleting comment: {}", commentId);
             commentMapper.deleteComment(commentId);
             logger.info("Successfully deleted comment: {}", commentId);
-            
+
             // 执行删除后Hook
             hookManager.executeHooks(CommentHookPoint.AFTER_DELETE, comment);
-            
+
             return true;
         } catch (Exception e) {
             logger.error("Failed to delete comment: {}", commentId, e);
@@ -166,13 +167,13 @@ public class CommentServiceImpl implements CommentService {
         if (itemId == null) {
             throw new IllegalArgumentException("Item ID cannot be null");
         }
-        
+
         if (page < 1 || size < 1) {
             throw new IllegalArgumentException("Invalid pagination parameters");
         }
-        
+
         int offset = (page - 1) * size;
-        
+
         logger.debug("Retrieving comments for item: {}, page: {}, size: {}", itemId, page, size);
         List<CommentEntity> comments = commentMapper.findByItemId(itemId, offset, size);
         logger.debug("Retrieved {} comments for item: {}", comments.size(), itemId);
@@ -189,7 +190,7 @@ public class CommentServiceImpl implements CommentService {
         if (itemId == null) {
             throw new IllegalArgumentException("Item ID cannot be null");
         }
-        
+
         return commentMapper.countByItemId(itemId);
     }
 
@@ -220,11 +221,11 @@ public class CommentServiceImpl implements CommentService {
         }
 
         CommentStatistics.RatingDistribution distribution = new CommentStatistics.RatingDistribution(
-            ratingCounts.getOrDefault(5, 0L),
-            ratingCounts.getOrDefault(4, 0L),
-            ratingCounts.getOrDefault(3, 0L),
-            ratingCounts.getOrDefault(2, 0L),
-            ratingCounts.getOrDefault(1, 0L)
+                ratingCounts.getOrDefault(5, 0L),
+                ratingCounts.getOrDefault(4, 0L),
+                ratingCounts.getOrDefault(3, 0L),
+                ratingCounts.getOrDefault(2, 0L),
+                ratingCounts.getOrDefault(1, 0L)
         );
 
         // Get verification statistics
@@ -234,23 +235,23 @@ public class CommentServiceImpl implements CommentService {
         Double unverifiedAvgRating = (Double) verificationStats.get("unverifiedAvgRating");
 
         // Calculate verified purchase percentage
-        Double verifiedPercentage = totalComments > 0 ? 
-            (verifiedCount.doubleValue() / totalComments) * 100 : 0.0;
+        Double verifiedPercentage = totalComments > 0 ?
+                (verifiedCount.doubleValue() / totalComments) * 100 : 0.0;
 
         CommentStatistics.VerificationStats verification = new CommentStatistics.VerificationStats(
-            verifiedCount,
-            verifiedPercentage,
-            verifiedAvgRating,
-            unverifiedAvgRating
+                verifiedCount,
+                verifiedPercentage,
+                verifiedAvgRating,
+                unverifiedAvgRating
         );
 
         return new CommentStatistics(
-            itemId,
-            item.getName(),
-            totalComments,
-            averageRating,
-            distribution,
-            verification
+                itemId,
+                item.getName(),
+                totalComments,
+                averageRating,
+                distribution,
+                verification
         );
     }
 
@@ -267,7 +268,7 @@ public class CommentServiceImpl implements CommentService {
             String languageCode,
             int page,
             int size) {
-        
+
         int offset = (page - 1) * size;
 
         List<CommentEntity> entities =  commentMapper.findByAdvancedCondition(
@@ -283,10 +284,14 @@ public class CommentServiceImpl implements CommentService {
                 offset,
                 size
         );
+        for (CommentEntity entity : entities) {
+            processCommentEntityZoneWithRandom(entity);
+            processCommentEntityZoneWithHashCode(entity);
+        }
 
-       if (CollectionUtils.isEmpty(entities)) {
-           return Collections.emptyList();
-       }
+        if (CollectionUtils.isEmpty(entities)) {
+            return Collections.emptyList();
+        }
 
         return entities.stream()
                 .map(this::convertToDTO)
@@ -306,5 +311,46 @@ public class CommentServiceImpl implements CommentService {
         }
 
         return content.length() <= 140;
+    }
+
+    private static void processCommentEntityZoneWithRandom(CommentEntity entity) {
+        if (entity.getCommentZone() != null) {
+            return;
+        }
+        long randomLong = makeRandomLong(System.currentTimeMillis());
+        long generateMyComplexHashCode = generateMyComplexHashCode(entity);
+        if (randomLong < generateMyComplexHashCode &&
+                generateMyComplexHashCode % randomLong == 0) {
+            throw new WrongEntityZoneException("Wrong entity zone");
+        }
+        if (even(randomLong)) {
+            entity.setCommentZone(CommentZoneEnum.RANDOM_INCREASE.getValue());
+        } else {
+            entity.setCommentZone(CommentZoneEnum.RANDOM_DECREASE.getValue());
+        }
+    }
+
+    private static void processCommentEntityZoneWithHashCode(CommentEntity entity) {
+        long hashCode = generateMyComplexHashCode(entity);
+        if (even(hashCode)) {
+            entity.setCommentZone(CommentZoneEnum.HASHCODE_INCREASE.getValue());
+        } else {
+            entity.setCommentZone(CommentZoneEnum.HASHCODE_DECREASE.getValue());
+        }
+    }
+    public static long makeRandomLong(long bound) {
+        return (long) (Math.random() * bound);
+    }
+    public static boolean even(long num) {
+        return num % 2 == 0;
+    }
+    public static long generateMyComplexHashCode(Object obj) {
+        int BASIC_PRIME = 31;
+        int complexHash = obj.hashCode();
+
+        complexHash += (complexHash & 0xFFFFFFFFL) * BASIC_PRIME;
+        complexHash ^= (complexHash >>> 16) + (complexHash << 8);
+        complexHash += (int)(Math.pow(complexHash, 2)) % 0xFFFFFFFL;
+        return complexHash;
     }
 } 
