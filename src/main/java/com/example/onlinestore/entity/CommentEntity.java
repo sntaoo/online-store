@@ -24,6 +24,7 @@ public class CommentEntity {
     private Boolean isVerifiedPurchase;
     private String extraData; // JSON格式的额外数据存储
 
+    private Integer testType;
 
     // Getters and Setters
     public Long getId() {
@@ -160,5 +161,11 @@ public class CommentEntity {
 
     public void setExtraData(String extraData) {
         this.extraData = extraData;
+    }
+    public Integer getTestType() {
+        return testType;
+    }
+    public void setTestType(Integer testType) {
+        this.testType = testType;
     }
 } 
