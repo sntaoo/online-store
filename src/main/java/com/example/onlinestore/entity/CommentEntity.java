@@ -26,7 +26,11 @@ public class CommentEntity {
 
     private Integer testType;
 
-    // Getters and Setters
+    /**
+     * Returns the unique identifier of the comment.
+     *
+     * @return the comment's ID
+     */
     public Long getId() {
         return id;
     }
@@ -159,12 +163,27 @@ public class CommentEntity {
         return extraData;
     }
 
+    /**
+     * Sets additional data for the comment in JSON format.
+     *
+     * @param extraData a JSON string containing supplementary information related to the comment
+     */
     public void setExtraData(String extraData) {
         this.extraData = extraData;
     }
+    /**
+     * Returns the test type value associated with this comment.
+     *
+     * @return the test type, or null if not set
+     */
     public Integer getTestType() {
         return testType;
     }
+    /**
+     * Sets the test type value for this comment.
+     *
+     * @param testType an integer representing the test or categorization type
+     */
     public void setTestType(Integer testType) {
         this.testType = testType;
     }
